@@ -1,7 +1,7 @@
 'use strict';
 
 const TONES = new Set(['calm', 'playful', 'tense', 'technical', 'affectionate', 'neutral']);
-const CONVERSATION_REVIEW_SYSTEM_PROMPT = `You are a private post-send conversation reviewer for a character chatbot. Return JSON only. Maintain temporary state for the next few turns: topic, up to 3 unresolved items, active participants, tone, one running bit, and expiresInMinutes. Also detect only concrete contextual errors in the bot reply: wrong referent/speaker, contradicting an explicit correction, answering the wrong message, or unsupported shared history. Do not edit merely for style. Schema: {"state":{"topic":string|null,"unresolved":string[],"participants":{"id":string|null,"name":string}[],"tone":"calm|playful|tense|technical|affectionate|neutral","runningBit":string|null,"expiresInMinutes":number},"repair":{"action":"KEEP|EDIT","replacement":string|null,"reason":string}}.`;
+const CONVERSATION_REVIEW_SYSTEM_PROMPT = `You are a private post-send conversation reviewer for a character chatbot. Return JSON only. Maintain temporary state for the next few turns: topic, up to 3 unresolved items, active participants, tone, one running bit, and expiresInMinutes. Also detect only concrete contextual errors in the bot reply: wrong referent/speaker, contradicting an explicit correction, answering the wrong message, or unsupported shared history. Do not edit merely for style. Finally output affinityDelta as +1 only for a genuinely warm/fun/meaningful positive exchange, -1 only for real boundary discomfort or pushing after reluctance, otherwise 0. Schema: {"state":{"topic":string|null,"unresolved":string[],"participants":{"id":string|null,"name":string}[],"tone":"calm|playful|tense|technical|affectionate|neutral","runningBit":string|null,"expiresInMinutes":number},"repair":{"action":"KEEP|EDIT","replacement":string|null,"reason":string},"affinityDelta":-1|0|1}.`;
 
 function firstJson(text) {
   const source = String(text || '');
@@ -38,6 +38,8 @@ function parseConversationReview(raw) {
   if (!['KEEP', 'EDIT'].includes(action)) return { ok: false, reason: 'invalid-action' };
   const replacement = action === 'EDIT' ? clean(parsed.repair?.replacement, 1000) : null;
   if (action === 'EDIT' && !replacement) return { ok: false, reason: 'missing-replacement' };
+  const affinityCandidate = Number(parsed.affinityDelta ?? 0);
+  const affinityDelta = [-1, 0, 1].includes(affinityCandidate) ? affinityCandidate : 0;
   return {
     ok: true,
     value: {
@@ -63,6 +65,7 @@ function parseConversationReview(raw) {
         replacement,
         reason: clean(parsed.repair?.reason, 240) || '',
       },
+      affinityDelta,
     },
   };
 }
@@ -82,9 +85,13 @@ async function reviewConversationTurn({ provider, previousState, recentContext, 
 }
 
 function applyConversationReview(store, scopeId, review, now = new Date()) {
-  if (!review?.ok) return { stateApplied: false, repair: null };
+  if (!review?.ok) return { stateApplied: false, repair: null, affinityDelta: 0 };
   if (store) store.set(scopeId, review.value.state, now);
-  return { stateApplied: Boolean(store), repair: review.value.repair };
+  return {
+    stateApplied: Boolean(store),
+    repair: review.value.repair,
+    affinityDelta: review.value.affinityDelta,
+  };
 }
 
 module.exports = {
