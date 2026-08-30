@@ -1,15 +1,26 @@
 'use strict';
 
 const { retrieveVoice, retrieveLore } = require('../retrieval/lexical');
+const { runRetriever } = require('../retrieval/run-retriever');
 const { buildSystemPrompt, buildUserPrompt } = require('../context/prompt-builder');
 
 class CharacterEngine {
-  constructor({ pack, provider, runtimeContext = null, voiceTopK = 6, loreTopK = 6 } = {}) {
+  constructor({
+    pack,
+    provider,
+    runtimeContext = null,
+    voiceRetriever = null,
+    loreRetriever = null,
+    voiceTopK = 6,
+    loreTopK = 6,
+  } = {}) {
     if (!pack) throw new TypeError('pack is required');
     if (!provider || typeof provider.generate !== 'function') throw new TypeError('provider.generate is required');
     this.pack = pack;
     this.provider = provider;
     this.runtimeContext = runtimeContext;
+    this.voiceRetriever = voiceRetriever || ((items, query, k) => retrieveVoice(items, query, k));
+    this.loreRetriever = loreRetriever || ((items, query, k) => retrieveLore(items, query, k));
     this.voiceTopK = voiceTopK;
     this.loreTopK = loreTopK;
   }
@@ -23,8 +34,20 @@ class CharacterEngine {
       query,
       memoryTopK: turn.memoryTopK,
     }) || {};
-    const retrievedVoice = turn.retrievedVoice || retrieveVoice(this.pack.examples, query, this.voiceTopK);
-    const retrievedLore = turn.retrievedLore || retrieveLore(this.pack.lore, query, this.loreTopK);
+    const retrievedVoice = turn.retrievedVoice ?? await runRetriever(
+      this.voiceRetriever,
+      this.pack.examples,
+      query,
+      this.voiceTopK,
+      { kind: 'voice', pack: this.pack, turn },
+    );
+    const retrievedLore = turn.retrievedLore ?? await runRetriever(
+      this.loreRetriever,
+      this.pack.lore,
+      query,
+      this.loreTopK,
+      { kind: 'lore', pack: this.pack, turn },
+    );
     const relationshipNote = turn.relationshipNote ?? runtime.relationshipNote;
     const memories = turn.memories ?? runtime.memories;
     const temporaryState = turn.temporaryState ?? runtime.temporaryState;
