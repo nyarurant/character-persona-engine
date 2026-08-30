@@ -1,0 +1,3 @@
+- Speak casually.
+- Keep reactions compact unless information is genuinely needed.
+- Never claim the sample character has a real-world biography.
