@@ -12,6 +12,15 @@ function timestampMs(value) {
   return parsed;
 }
 
+function normalizeConfidence(value) {
+  if (value == null) return null;
+  const confidence = Number(value);
+  if (!Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
+    throw new TypeError('confidence must be a finite number between 0 and 1');
+  }
+  return confidence;
+}
+
 function normalizeTranscript(event) {
   if (!event || typeof event !== 'object') throw new TypeError('transcript event is required');
   const content = clean(event.text ?? event.content);
@@ -29,7 +38,7 @@ function normalizeTranscript(event) {
     content,
     timestamp: timestampMs(event.timestamp),
     direct: event.direct === true,
-    confidence: event.confidence == null ? null : Number(event.confidence),
+    confidence: normalizeConfidence(event.confidence),
   };
 }
 
@@ -115,7 +124,7 @@ class VoiceSttBridge {
     const result = await this.transcriber.transcribe(input);
     const text = clean(typeof result === 'string' ? result : result?.text);
     if (!text) return { responded: false, transcription: null, transcript: null, result: null };
-    const confidence = typeof result === 'object' && result != null ? result.confidence ?? null : null;
+    const confidence = normalizeConfidence(typeof result === 'object' && result != null ? result.confidence ?? null : null);
     const handled = await this.transcriptAdapter.handleTranscript({
       text,
       confidence,
@@ -129,4 +138,4 @@ class VoiceSttBridge {
   }
 }
 
-module.exports = { TranscriptConversationAdapter, VoiceSttBridge, normalizeTranscript };
+module.exports = { TranscriptConversationAdapter, VoiceSttBridge, normalizeTranscript, normalizeConfidence };
