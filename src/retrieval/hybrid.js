@@ -23,6 +23,7 @@ class OllamaEmbedder {
     if (typeof fetchImpl !== 'function') throw new TypeError('fetch implementation is required');
     this.baseUrl = String(baseUrl).replace(/\/$/u, '');
     this.model = model;
+    this.cacheKey = `ollama:${this.baseUrl}:${this.model}`;
     this.fetchImpl = fetchImpl;
     this.timeoutMs = timeoutMs;
   }
@@ -51,7 +52,15 @@ class OllamaEmbedder {
 }
 
 class HybridRetriever {
-  constructor({ embedder, textFn, lexicalWeight = 0.35, semanticWeight = 0.65, fallbackOnError = true } = {}) {
+  constructor({
+    embedder,
+    textFn,
+    lexicalWeight = 0.35,
+    semanticWeight = 0.65,
+    fallbackOnError = true,
+    embeddingCache = null,
+    cacheNamespace = 'default',
+  } = {}) {
     if (!embedder || typeof embedder.embed !== 'function') throw new TypeError('embedder.embed is required');
     if (typeof textFn !== 'function') throw new TypeError('textFn is required');
     this.embedder = embedder;
@@ -59,6 +68,8 @@ class HybridRetriever {
     this.lexicalWeight = lexicalWeight;
     this.semanticWeight = semanticWeight;
     this.fallbackOnError = fallbackOnError;
+    this.embeddingCache = embeddingCache;
+    this.cacheNamespace = cacheNamespace;
     this.cache = new WeakMap();
   }
 
@@ -66,7 +77,10 @@ class HybridRetriever {
     let cached = this.cache.get(items);
     if (cached) return cached;
     const texts = items.map(this.textFn);
-    const promise = this.embedder.embed(texts).then((vectors) => ({ texts, vectors }));
+    const vectorPromise = this.embeddingCache?.embedTexts
+      ? this.embeddingCache.embedTexts(texts, this.embedder, this.cacheNamespace)
+      : this.embedder.embed(texts);
+    const promise = Promise.resolve(vectorPromise).then((vectors) => ({ texts, vectors }));
     this.cache.set(items, promise);
     try {
       return await promise;
@@ -74,6 +88,10 @@ class HybridRetriever {
       this.cache.delete(items);
       throw error;
     }
+  }
+
+  invalidateMemoryCache() {
+    this.cache = new WeakMap();
   }
 
   async retrieve(items, query, k = 6) {
@@ -114,11 +132,11 @@ class HybridRetriever {
 }
 
 function createVoiceHybridRetriever(options = {}) {
-  return new HybridRetriever({ ...options, textFn: options.textFn || exampleSearchText });
+  return new HybridRetriever({ ...options, textFn: options.textFn || exampleSearchText, cacheNamespace: options.cacheNamespace || 'voice' });
 }
 
 function createLoreHybridRetriever(options = {}) {
-  return new HybridRetriever({ ...options, textFn: options.textFn || loreSearchText });
+  return new HybridRetriever({ ...options, textFn: options.textFn || loreSearchText, cacheNamespace: options.cacheNamespace || 'lore' });
 }
 
 module.exports = {

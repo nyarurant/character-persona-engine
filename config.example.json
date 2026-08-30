@@ -10,6 +10,7 @@
     "mode": "hybrid",
     "ollamaUrl": "http://127.0.0.1:11434",
     "embeddingModel": "bge-m3",
+    "persistentCache": true,
     "voiceTopK": 6,
     "loreTopK": 6,
     "fallbackOnError": true
@@ -18,9 +19,14 @@
     "dataDir": "./runtime-data/sample-character",
     "memoryReview": true,
     "conversationReview": true,
+    "episodicRecall": true,
+    "episodeTtlDays": 90,
+    "maxEpisodesPerUser": 500,
     "applyRepairs": true,
     "favorableThreshold": 8,
-    "closeThreshold": 25
+    "closeThreshold": 25,
+    "defaultUserProfile": "",
+    "userProfiles": {}
   },
   "discord": {
     "tokenEnv": "DISCORD_BOT_TOKEN",

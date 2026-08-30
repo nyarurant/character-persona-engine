@@ -33,6 +33,7 @@ class CharacterEngine {
       scopeId: turn.scopeId,
       query,
       memoryTopK: turn.memoryTopK,
+      episodeTopK: turn.episodeTopK,
     }) || {};
     const retrievedVoice = turn.retrievedVoice ?? await runRetriever(
       this.voiceRetriever,
@@ -50,12 +51,14 @@ class CharacterEngine {
     );
     const relationshipNote = turn.relationshipNote ?? runtime.relationshipNote;
     const memories = turn.memories ?? runtime.memories;
+    const episodes = turn.episodes ?? runtime.episodes;
     const temporaryState = turn.temporaryState ?? runtime.temporaryState;
     const systemPrompt = buildSystemPrompt(this.pack, {
       retrievedVoice,
       retrievedLore,
       relationshipNote,
       memories,
+      episodes,
       temporaryState,
     });
     const userPrompt = buildUserPrompt(turn);
@@ -74,8 +77,10 @@ class CharacterEngine {
       runtime: {
         affinity: runtime.affinity ?? null,
         memories: memories || [],
+        episodes: episodes || [],
         temporaryState: temporaryState || null,
         relationshipNote: relationshipNote || '',
+        relationshipSource: runtime.relationshipSource || null,
       },
       usage: result?.usage ?? null,
     };

@@ -7,7 +7,8 @@ The project deliberately separates data that roleplay bots often mix together:
 - **Identity / persona** — who the character is and how they behave.
 - **Voice examples** — how the character actually speaks in context.
 - **Lore** — canonical/reference facts about the character and world.
-- **User memory** — durable facts learned about each conversation partner.
+- **Durable user memory** — stable facts/preferences learned about each conversation partner.
+- **Episodic recall** — short-lived summaries of meaningful shared moments, kept separate from profile facts and canon.
 - **Runtime state** — affinity and short-lived conversation state.
 
 Character-specific behavior lives in a Character Pack under `characters/<id>/`. The engine itself contains no hard-coded character identity.
@@ -22,11 +23,15 @@ Character-specific behavior lives in a Character Pack under `characters/<id>/`. 
 - pluggable retriever interface
 - Ollama `/api/embed` adapter (`bge-m3` by default)
 - semantic + lexical `HybridRetriever` with lexical fallback
+- content-addressed persistent embedding cache; changed Voice/Lore records are re-embedded incrementally
 - persistent `MemoryStore` with sensitive-data guard and expiry
+- separate TTL-based `EpisodicStore` with sensitivity guard, deduplication and per-user caps
+- manual per-user relationship profiles with affinity/default fallback
 - persistent `AffinityStore`
 - TTL-based `ConversationStateStore`
 - AI memory decision reviewer
 - AI conversation-state reviewer
+- reviewer-selected callback-worthy episodic summaries
 - minimal contextual self-repair
 - affinity delta review without an extra reviewer call
 - `ReviewedCharacterEngine` orchestration
@@ -65,6 +70,12 @@ npm run start:discord
 
 The runner loads the Character Pack named by `config.json`, creates per-character runtime stores, optionally enables Ollama hybrid retrieval, and connects an official Discord bot account. Normal user-account automation is not part of this project.
 
+Hybrid mode persists Voice/Lore item vectors under the character runtime-data directory by default. A restart therefore reuses unchanged vectors instead of embedding the full Character Pack again. Set `retrieval.persistentCache` to `false` to disable this.
+
+Episodic recall is enabled by default in the runner. The conversation reviewer may save a short non-sensitive summary only when a turn creates a genuinely callback-worthy shared moment. Routine chat and stable personal facts are not episodes. Disable it with `runtime.episodicRecall: false`.
+
+Manual relationship notes can be set with `runtime.userProfiles` (`Discord user ID -> note`). A manual profile overrides affinity-derived notes; affinity overrides `runtime.defaultUserProfile`.
+
 Use another config file with:
 
 ```bash
@@ -100,6 +111,19 @@ characters/my-character/
 
 See [`docs/character-pack.md`](docs/character-pack.md) and [`docs/building-a-character.md`](docs/building-a-character.md).
 
+## Runtime data separation
+
+```text
+runtime-data/my-character/
+├─ memory.json       # stable user facts/preferences
+├─ episodes.json     # temporary shared-event summaries
+├─ affinity.json     # relationship score/tier
+├─ conversation.json # short-lived channel working state
+└─ embeddings.json   # content-addressed Voice/Lore vectors
+```
+
+None of these files are Character Lore. They are runtime data and are ignored by Git.
+
 ## Programmatic use
 
 ```js
@@ -110,9 +134,11 @@ const {
   RuntimeContext,
   ClaudeCliProvider,
   OllamaEmbedder,
+  PersistentEmbeddingCache,
   createVoiceHybridRetriever,
   createLoreHybridRetriever,
   MemoryStore,
+  EpisodicStore,
   AffinityStore,
   ConversationStateStore,
   loadCharacterPack,
@@ -121,28 +147,41 @@ const {
 const pack = loadCharacterPack(path.join(__dirname, 'characters'), 'sample-character');
 const provider = new ClaudeCliProvider({ model: 'sonnet' });
 const embedder = new OllamaEmbedder({ model: 'bge-m3' });
+const embeddingCache = new PersistentEmbeddingCache({ filePath: './runtime-data/embeddings.json' });
 
 const memoryStore = new MemoryStore({ filePath: './runtime-data/memory.json' });
+const episodicStore = new EpisodicStore({ filePath: './runtime-data/episodes.json' });
 const affinityStore = new AffinityStore({ filePath: './runtime-data/affinity.json' });
 const conversationStateStore = new ConversationStateStore({ filePath: './runtime-data/conversation.json' });
 
 const runtimeContext = new RuntimeContext({
   memoryStore,
+  episodicStore,
   affinityStore,
   conversationStateStore,
+  userProfiles: { 'user-id': 'old friend; dry teasing is normal' },
 });
 
 const core = new CharacterEngine({
   pack,
   provider,
   runtimeContext,
-  voiceRetriever: createVoiceHybridRetriever({ embedder }),
-  loreRetriever: createLoreHybridRetriever({ embedder }),
+  voiceRetriever: createVoiceHybridRetriever({
+    embedder,
+    embeddingCache,
+    cacheNamespace: `${pack.id}:voice`,
+  }),
+  loreRetriever: createLoreHybridRetriever({
+    embedder,
+    embeddingCache,
+    cacheNamespace: `${pack.id}:lore`,
+  }),
 });
 
 const engine = new ReviewedCharacterEngine({
   engine: core,
   memoryStore,
+  episodicStore,
   affinityStore,
   conversationStateStore,
 });
@@ -157,18 +196,17 @@ const result = await engine.respond({
 
 ## Design rules
 
-Voice is **not** Lore. Lore is **not** user Memory. Memory is **not** temporary Conversation State. A dramatic line from one scene should not become a permanent factual belief, and a conversation partner's learned preference should never mutate the canonical Character Pack.
+Voice is **not** Lore. Lore is **not** durable user Memory. Durable Memory is **not** Episodic Recall. Episodic Recall is **not** temporary Conversation State. A dramatic line from one scene should not become a permanent factual belief, and a conversation partner's learned preference or shared joke should never mutate the canonical Character Pack.
 
-The durable-memory layer rejects sensitive-looking facts such as credentials, contact/address information, legal names, health/sexual information, political or religious affiliation, race/ethnicity, union membership, criminal history, and financial identifiers.
+The durable-memory and episodic layers reject sensitive-looking facts such as credentials, contact/address information, legal names, health/sexual information, political or religious affiliation, race/ethnicity, union membership, criminal history, and financial identifiers.
 
 The core runtime remains provider-neutral. Claude CLI, Discord and Ollama are adapters around the engine rather than assumptions inside the character model.
 
 ## Remaining parity work
 
-- richer per-person episodic recall beyond durable memory
-- embedding index persistence / incremental rebuild for very large Character Packs
 - optional voice/STT adapter
 - Character Pack schema migration/version tooling
+- hot Character Pack reload orchestration for long-running processes
 
 ## License
 

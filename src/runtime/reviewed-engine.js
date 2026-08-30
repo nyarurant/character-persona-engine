@@ -7,6 +7,7 @@ class ReviewedCharacterEngine {
   constructor({
     engine,
     memoryStore = null,
+    episodicStore = null,
     conversationStateStore = null,
     affinityStore = null,
     memoryProvider = null,
@@ -18,6 +19,7 @@ class ReviewedCharacterEngine {
     if (!engine || typeof engine.respond !== 'function') throw new TypeError('engine.respond is required');
     this.engine = engine;
     this.memoryStore = memoryStore;
+    this.episodicStore = episodicStore;
     this.conversationStateStore = conversationStateStore;
     this.affinityStore = affinityStore;
     this.memoryProvider = memoryProvider || engine.provider;
@@ -67,7 +69,22 @@ class ReviewedCharacterEngine {
         if (this.affinityStore && turn?.speaker?.id && applied.affinityDelta) {
           affinity = this.affinityStore.adjust(turn.speaker.id, applied.affinityDelta);
         }
-        reviews.conversation = { review, applied, affinity };
+        let episode = null;
+        if (this.episodicStore && turn?.speaker?.id && applied.episode?.store) {
+          try {
+            episode = this.episodicStore.add({
+              subjectId: turn.speaker.id,
+              subjectName: turn.speaker.name,
+              summary: applied.episode.summary,
+              sourceMessageId: turn.messageId,
+              scopeId: turn.scopeId,
+              expiresInDays: applied.episode.expiresInDays,
+            });
+          } catch (error) {
+            episode = { error: error.message };
+          }
+        }
+        reviews.conversation = { review, applied, affinity, episode };
         if (this.applyRepairs && applied.repair?.action === 'EDIT' && applied.repair.replacement) {
           result.text = applied.repair.replacement;
         }
