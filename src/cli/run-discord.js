@@ -11,7 +11,11 @@ const {
   OllamaEmbedder,
   createVoiceHybridRetriever,
   createLoreHybridRetriever,
+  PersistentEmbeddingIndex,
+  createIndexedVoiceRetriever,
+  createIndexedLoreRetriever,
   MemoryStore,
+  EpisodeStore,
   AffinityStore,
   ConversationStateStore,
   DiscordBotAdapter,
@@ -47,8 +51,12 @@ function createApplication(configInfo) {
     timeoutMs: modelConfig.timeoutMs || 120000,
   });
 
+  const runtime = config.runtime || {};
+  const dataDir = resolveFrom(rootDir, runtime.dataDir, `./runtime-data/${pack.id}`);
+
   let voiceRetriever = null;
   let loreRetriever = null;
+  let embeddingIndex = null;
   const retrieval = config.retrieval || {};
   if ((retrieval.mode || 'lexical') === 'hybrid') {
     const embedder = new OllamaEmbedder({
@@ -56,25 +64,32 @@ function createApplication(configInfo) {
       model: retrieval.embeddingModel || 'bge-m3',
       timeoutMs: retrieval.timeoutMs || 30000,
     });
-    voiceRetriever = createVoiceHybridRetriever({
-      embedder,
+    const commonOptions = {
       lexicalWeight: retrieval.lexicalWeight ?? 0.35,
       semanticWeight: retrieval.semanticWeight ?? 0.65,
       fallbackOnError: retrieval.fallbackOnError !== false,
-    });
-    loreRetriever = createLoreHybridRetriever({
-      embedder,
-      lexicalWeight: retrieval.lexicalWeight ?? 0.35,
-      semanticWeight: retrieval.semanticWeight ?? 0.65,
-      fallbackOnError: retrieval.fallbackOnError !== false,
-    });
+    };
+    if (retrieval.persistentIndex !== false) {
+      embeddingIndex = new PersistentEmbeddingIndex({
+        filePath: resolveFrom(rootDir, retrieval.indexFile, path.join(dataDir, 'embeddings.json')),
+        embedder,
+        batchSize: retrieval.embeddingBatchSize ?? 64,
+      });
+      voiceRetriever = createIndexedVoiceRetriever({ index: embeddingIndex, ...commonOptions });
+      loreRetriever = createIndexedLoreRetriever({ index: embeddingIndex, ...commonOptions });
+    } else {
+      voiceRetriever = createVoiceHybridRetriever({ embedder, ...commonOptions });
+      loreRetriever = createLoreHybridRetriever({ embedder, ...commonOptions });
+    }
   } else if (retrieval.mode && retrieval.mode !== 'lexical') {
     throw new Error(`unsupported retrieval mode: ${retrieval.mode}`);
   }
 
-  const runtime = config.runtime || {};
-  const dataDir = resolveFrom(rootDir, runtime.dataDir, `./runtime-data/${pack.id}`);
   const memoryStore = new MemoryStore({ filePath: path.join(dataDir, 'memory.json') });
+  const episodeStore = new EpisodeStore({
+    filePath: path.join(dataDir, 'episodes.json'),
+    maxRecordsPerSubject: runtime.maxEpisodeRecordsPerSubject ?? 250,
+  });
   const affinityStore = new AffinityStore({
     filePath: path.join(dataDir, 'affinity.json'),
     favorableThreshold: runtime.favorableThreshold ?? 8,
@@ -86,6 +101,7 @@ function createApplication(configInfo) {
   });
   const runtimeContext = new RuntimeContext({
     memoryStore,
+    episodeStore,
     affinityStore,
     conversationStateStore,
     affinityNotes: {
@@ -106,6 +122,7 @@ function createApplication(configInfo) {
   const engine = new ReviewedCharacterEngine({
     engine: coreEngine,
     memoryStore,
+    episodeStore,
     conversationStateStore,
     affinityStore,
     memoryReview: runtime.memoryReview !== false,
@@ -131,7 +148,14 @@ function createApplication(configInfo) {
     maxHistoryMessages: discord.maxHistoryMessages ?? 15,
   });
 
-  return { pack, provider, engine, adapter, stores: { memoryStore, affinityStore, conversationStateStore } };
+  return {
+    pack,
+    provider,
+    engine,
+    adapter,
+    embeddingIndex,
+    stores: { memoryStore, episodeStore, affinityStore, conversationStateStore },
+  };
 }
 
 async function main() {
