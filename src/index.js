@@ -5,6 +5,7 @@ const { CharacterEngine } = require('./runtime/character-engine');
 const { ClaudeCliProvider } = require('./providers/claude-cli');
 const { retrieveVoice, retrieveLore } = require('./retrieval/lexical');
 const { buildSystemPrompt, buildUserPrompt } = require('./context/prompt-builder');
+const { buildPersonaFromCorpus } = require('./build/persona-builder');
 
 module.exports = {
   loadCharacterPack,
@@ -14,4 +15,5 @@ module.exports = {
   retrieveLore,
   buildSystemPrompt,
   buildUserPrompt,
+  buildPersonaFromCorpus,
 };
