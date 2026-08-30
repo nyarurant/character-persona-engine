@@ -47,7 +47,7 @@ npm run validate-pack -- sample-character
 
 ### Run on Discord
 
-Copy the example config and set your official Discord bot token in the environment:
+Copy the example config, set at least one `discord.allowedChannelIds` or `discord.allowedGuildIds`, and set your official Discord bot token in the environment. The runner refuses to start with an empty scope unless you explicitly set `discord.allowAll` to `true`.
 
 ```bash
 cp config.example.json config.json
@@ -158,6 +158,8 @@ const result = await engine.respond({
 ## Design rules
 
 Voice is **not** Lore. Lore is **not** user Memory. Memory is **not** temporary Conversation State. A dramatic line from one scene should not become a permanent factual belief, and a conversation partner's learned preference should never mutate the canonical Character Pack.
+
+The durable-memory layer rejects sensitive-looking facts such as credentials, contact/address information, legal names, health/sexual information, political or religious affiliation, race/ethnicity, union membership, criminal history, and financial identifiers.
 
 The core runtime remains provider-neutral. Claude CLI, Discord and Ollama are adapters around the engine rather than assumptions inside the character model.
 
