@@ -8,6 +8,7 @@ class ReviewedCharacterEngine {
     engine,
     memoryStore = null,
     conversationStateStore = null,
+    affinityStore = null,
     memoryProvider = null,
     conversationProvider = null,
     memoryReview = true,
@@ -18,6 +19,7 @@ class ReviewedCharacterEngine {
     this.engine = engine;
     this.memoryStore = memoryStore;
     this.conversationStateStore = conversationStateStore;
+    this.affinityStore = affinityStore;
     this.memoryProvider = memoryProvider || engine.provider;
     this.conversationProvider = conversationProvider || engine.provider;
     this.memoryReview = memoryReview;
@@ -61,7 +63,11 @@ class ReviewedCharacterEngine {
           botReply: result.text,
         });
         const applied = applyConversationReview(this.conversationStateStore, turn.scopeId, review);
-        reviews.conversation = { review, applied };
+        let affinity = null;
+        if (this.affinityStore && turn?.speaker?.id && applied.affinityDelta) {
+          affinity = this.affinityStore.adjust(turn.speaker.id, applied.affinityDelta);
+        }
+        reviews.conversation = { review, applied, affinity };
         if (this.applyRepairs && applied.repair?.action === 'EDIT' && applied.repair.replacement) {
           result.text = applied.repair.replacement;
         }
