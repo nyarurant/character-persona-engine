@@ -9,9 +9,11 @@ const {
   RuntimeContext,
   ClaudeCliProvider,
   OllamaEmbedder,
+  PersistentEmbeddingCache,
   createVoiceHybridRetriever,
   createLoreHybridRetriever,
   MemoryStore,
+  EpisodicStore,
   AffinityStore,
   ConversationStateStore,
   DiscordBotAdapter,
@@ -47,8 +49,12 @@ function createApplication(configInfo) {
     timeoutMs: modelConfig.timeoutMs || 120000,
   });
 
+  const runtime = config.runtime || {};
+  const dataDir = resolveFrom(rootDir, runtime.dataDir, `./runtime-data/${pack.id}`);
+
   let voiceRetriever = null;
   let loreRetriever = null;
+  let embeddingCache = null;
   const retrieval = config.retrieval || {};
   if ((retrieval.mode || 'lexical') === 'hybrid') {
     const embedder = new OllamaEmbedder({
@@ -56,14 +62,24 @@ function createApplication(configInfo) {
       model: retrieval.embeddingModel || 'bge-m3',
       timeoutMs: retrieval.timeoutMs || 30000,
     });
+    if (retrieval.persistentCache !== false) {
+      embeddingCache = new PersistentEmbeddingCache({
+        filePath: resolveFrom(rootDir, retrieval.embeddingCacheFile, path.join(dataDir, 'embeddings.json')),
+        maxEntries: retrieval.embeddingCacheMaxEntries ?? 50000,
+      });
+    }
     voiceRetriever = createVoiceHybridRetriever({
       embedder,
+      embeddingCache,
+      cacheNamespace: `${pack.id}:voice`,
       lexicalWeight: retrieval.lexicalWeight ?? 0.35,
       semanticWeight: retrieval.semanticWeight ?? 0.65,
       fallbackOnError: retrieval.fallbackOnError !== false,
     });
     loreRetriever = createLoreHybridRetriever({
       embedder,
+      embeddingCache,
+      cacheNamespace: `${pack.id}:lore`,
       lexicalWeight: retrieval.lexicalWeight ?? 0.35,
       semanticWeight: retrieval.semanticWeight ?? 0.65,
       fallbackOnError: retrieval.fallbackOnError !== false,
@@ -72,9 +88,12 @@ function createApplication(configInfo) {
     throw new Error(`unsupported retrieval mode: ${retrieval.mode}`);
   }
 
-  const runtime = config.runtime || {};
-  const dataDir = resolveFrom(rootDir, runtime.dataDir, `./runtime-data/${pack.id}`);
   const memoryStore = new MemoryStore({ filePath: path.join(dataDir, 'memory.json') });
+  const episodicStore = runtime.episodicRecall === false ? null : new EpisodicStore({
+    filePath: path.join(dataDir, 'episodes.json'),
+    defaultTtlDays: runtime.episodeTtlDays ?? 90,
+    maxRecordsPerSubject: runtime.maxEpisodesPerUser ?? 500,
+  });
   const affinityStore = new AffinityStore({
     filePath: path.join(dataDir, 'affinity.json'),
     favorableThreshold: runtime.favorableThreshold ?? 8,
@@ -86,8 +105,11 @@ function createApplication(configInfo) {
   });
   const runtimeContext = new RuntimeContext({
     memoryStore,
+    episodicStore,
     affinityStore,
     conversationStateStore,
+    userProfiles: runtime.userProfiles || {},
+    defaultUserProfile: runtime.defaultUserProfile || '',
     affinityNotes: {
       favorable: runtime.favorableRelationshipNote || 'You know this person reasonably well and can be more relaxed.',
       close: runtime.closeRelationshipNote || 'This is an established close relationship; comfortable banter is natural.',
@@ -106,6 +128,7 @@ function createApplication(configInfo) {
   const engine = new ReviewedCharacterEngine({
     engine: coreEngine,
     memoryStore,
+    episodicStore,
     conversationStateStore,
     affinityStore,
     memoryReview: runtime.memoryReview !== false,
@@ -131,7 +154,13 @@ function createApplication(configInfo) {
     maxHistoryMessages: discord.maxHistoryMessages ?? 15,
   });
 
-  return { pack, provider, engine, adapter, stores: { memoryStore, affinityStore, conversationStateStore } };
+  return {
+    pack,
+    provider,
+    engine,
+    adapter,
+    stores: { memoryStore, episodicStore, affinityStore, conversationStateStore, embeddingCache },
+  };
 }
 
 async function main() {
