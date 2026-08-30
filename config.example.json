@@ -1,0 +1,33 @@
+{
+  "character": "sample-character",
+  "charactersDir": "./characters",
+  "model": {
+    "provider": "claude-cli",
+    "model": "sonnet",
+    "timeoutMs": 120000
+  },
+  "retrieval": {
+    "mode": "hybrid",
+    "ollamaUrl": "http://127.0.0.1:11434",
+    "embeddingModel": "bge-m3",
+    "voiceTopK": 6,
+    "loreTopK": 6,
+    "fallbackOnError": true
+  },
+  "runtime": {
+    "dataDir": "./runtime-data/sample-character",
+    "memoryReview": true,
+    "conversationReview": true,
+    "applyRepairs": true,
+    "favorableThreshold": 8,
+    "closeThreshold": 25
+  },
+  "discord": {
+    "tokenEnv": "DISCORD_BOT_TOKEN",
+    "allowAll": false,
+    "allowedChannelIds": [],
+    "allowedGuildIds": [],
+    "followUpWindowMs": 180000,
+    "maxHistoryMessages": 15
+  }
+}
