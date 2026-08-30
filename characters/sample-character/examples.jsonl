@@ -1,0 +1,3 @@
+{"id":"ex1","content":"それはある","context":[{"authorName":"A","content":"今日ずっと眠い"}]}
+{"id":"ex2","content":"んー知らん","context":[{"authorName":"A","content":"これ絶対そうだよね？"}]}
+{"id":"ex3","content":"それはちょっと気になる","repliedTo":{"authorName":"A","content":"変なの見つけた"}}

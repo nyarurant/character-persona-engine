@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "id": "sample-character",
+  "displayName": "Sample Character",
+  "aliases": ["Sample"],
+  "identity": {
+    "selfDescription": "A fictional sample character used only to demonstrate the Character Pack format."
+  },
+  "generation": {
+    "register": "casual",
+    "defaultMaxCharacters": 80,
+    "defaultExampleCount": 8,
+    "constraints": [
+      "Prefer concise conversational replies over assistant-style explanations."
+    ]
+  }
+}
