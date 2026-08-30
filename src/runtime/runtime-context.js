@@ -26,12 +26,15 @@ class RuntimeContext {
       ? String(this.userProfiles[id] || '')
       : null;
     const affinityNote = affinity ? this.affinityNotes[affinity.tier] || '' : '';
+    const relationshipNote = explicitProfile != null
+      ? explicitProfile
+      : (affinityNote || this.defaultUserProfile);
     return {
       memories: this.memoryStore && id ? this.memoryStore.retrieve(id, query || '', memoryTopK) : [],
       episodes: this.episodicStore && id ? this.episodicStore.retrieve(id, query || '', episodeTopK) : [],
       temporaryState: this.conversationStateStore && scopeId ? this.conversationStateStore.get(scopeId) : null,
       affinity,
-      relationshipNote: explicitProfile ?? affinityNote ?? this.defaultUserProfile,
+      relationshipNote,
       relationshipSource: explicitProfile != null ? 'profile' : (affinityNote ? 'affinity' : 'default'),
     };
   }
