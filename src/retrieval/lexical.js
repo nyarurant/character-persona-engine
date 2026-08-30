@@ -37,21 +37,34 @@ function loreSearchText(entry) {
   return [entry.title, entry.fact, entry.content, ...(entry.tags || [])].filter(Boolean).join(' ');
 }
 
-function topK(items, query, textFn, k) {
-  return items
+function rankLexical(items, query, textFn, k = 6) {
+  return (items || [])
     .map((item, index) => ({ item, score: overlapScore(query, textFn(item)), index }))
     .filter((x) => x.score > 0)
     .sort((a, b) => b.score - a.score || a.index - b.index)
     .slice(0, Math.max(0, k))
-    .map(({ item, score }) => ({ ...item, _score: Number(score.toFixed(4)) }));
+    .map(({ item, score }) => ({
+      ...item,
+      _score: Number(score.toFixed(4)),
+      _lexicalScore: Number(score.toFixed(4)),
+    }));
 }
 
 function retrieveVoice(examples, query, k = 6) {
-  return topK(examples || [], query, exampleSearchText, k);
+  return rankLexical(examples, query, exampleSearchText, k);
 }
 
 function retrieveLore(lore, query, k = 6) {
-  return topK(lore || [], query, loreSearchText, k);
+  return rankLexical(lore, query, loreSearchText, k);
 }
 
-module.exports = { normalize, tokenize, overlapScore, retrieveVoice, retrieveLore };
+module.exports = {
+  normalize,
+  tokenize,
+  overlapScore,
+  exampleSearchText,
+  loreSearchText,
+  rankLexical,
+  retrieveVoice,
+  retrieveLore,
+};
