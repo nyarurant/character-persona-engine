@@ -22,6 +22,7 @@
     "conversationReview": true,
     "applyRepairs": true,
     "maxEpisodeRecordsPerSubject": 250,
+    "userProfiles": {},
     "favorableThreshold": 8,
     "closeThreshold": 25
   },
