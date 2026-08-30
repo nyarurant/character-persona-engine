@@ -1,17 +1,21 @@
 {
   "name": "character-persona-engine",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": false,
-  "description": "Reusable character/persona runtime with separated voice, lore and conversational state",
+  "description": "Reusable character/persona runtime with separated voice, lore, memory and conversational state",
   "main": "src/index.js",
   "type": "commonjs",
   "scripts": {
     "test": "node --test",
     "validate-pack": "node src/cli/validate-pack.js",
-    "build-persona": "node src/cli/build-persona.js"
+    "build-persona": "node src/cli/build-persona.js",
+    "start:discord": "node src/cli/run-discord.js"
   },
   "engines": {
     "node": ">=20"
+  },
+  "optionalDependencies": {
+    "discord.js": "^14.27.0"
   },
   "license": "MIT"
 }
