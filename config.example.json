@@ -10,6 +10,8 @@
     "mode": "hybrid",
     "ollamaUrl": "http://127.0.0.1:11434",
     "embeddingModel": "bge-m3",
+    "persistentIndex": true,
+    "embeddingBatchSize": 64,
     "voiceTopK": 6,
     "loreTopK": 6,
     "fallbackOnError": true
@@ -19,6 +21,7 @@
     "memoryReview": true,
     "conversationReview": true,
     "applyRepairs": true,
+    "maxEpisodeRecordsPerSubject": 250,
     "favorableThreshold": 8,
     "closeThreshold": 25
   },
