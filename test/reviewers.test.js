@@ -9,8 +9,10 @@ const {
 } = require('../src');
 
 test('memory reviewer rejects sensitive-looking durable facts', () => {
-  const result = parseMemoryDecision('{"action":"remember","category":"identity","fact":"password abc","confidence":1,"expiresInDays":null}');
-  assert.equal(result.ok, false);
+  const credential = parseMemoryDecision('{"action":"remember","category":"identity","fact":"password abc","confidence":1,"expiresInDays":null}');
+  const health = parseMemoryDecision('{"action":"remember","category":"identity","fact":"持病の診断がある","confidence":1,"expiresInDays":null}');
+  assert.equal(credential.ok, false);
+  assert.equal(health.ok, false);
 });
 
 test('ongoing memory requires an expiry', () => {
