@@ -9,6 +9,10 @@ function clean(value, max = 800) {
   return String(value ?? '').normalize('NFKC').replace(/[\u200B-\u200D\uFEFF]/gu, '').replace(/\s+/gu, ' ').trim().slice(0, max);
 }
 
+function normalizeSummary(value) {
+  return clean(value, 600).toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
+}
+
 class EpisodicStore {
   constructor({ filePath, defaultTtlDays = 90, maxRecordsPerSubject = 500 } = {}) {
     if (!filePath) throw new TypeError('filePath is required');
@@ -32,6 +36,20 @@ class EpisodicStore {
     const ttlDays = expiresInDays == null ? this.defaultTtlDays : Number(expiresInDays);
     if (!Number.isFinite(ttlDays) || ttlDays <= 0) throw new TypeError('expiresInDays must be positive');
     const nowDate = new Date(now);
+    const expiresAt = new Date(nowDate.getTime() + ttlDays * 86400000).toISOString();
+    const normalized = normalizeSummary(text);
+    const existing = this.records.find((entry) =>
+      entry.subjectId === id && normalizeSummary(entry.summary) === normalized && Date.parse(entry.expiresAt) > nowDate.getTime(),
+    );
+    if (existing) {
+      existing.subjectName = clean(subjectName, 120) || existing.subjectName;
+      existing.sourceMessageId = sourceMessageId == null ? existing.sourceMessageId : clean(sourceMessageId, 128);
+      existing.scopeId = scopeId == null ? existing.scopeId : clean(scopeId, 128);
+      existing.expiresAt = expiresAt;
+      existing.updatedAt = nowDate.toISOString();
+      this.save();
+      return { ...existing, deduplicated: true };
+    }
     const record = {
       id: crypto.randomUUID(),
       subjectId: id,
@@ -40,7 +58,8 @@ class EpisodicStore {
       sourceMessageId: sourceMessageId == null ? null : clean(sourceMessageId, 128),
       scopeId: scopeId == null ? null : clean(scopeId, 128),
       createdAt: nowDate.toISOString(),
-      expiresAt: new Date(nowDate.getTime() + ttlDays * 86400000).toISOString(),
+      updatedAt: nowDate.toISOString(),
+      expiresAt,
     };
     this.records.push(record);
     const subjectRecords = this.records.filter((entry) => entry.subjectId === id);
@@ -52,7 +71,7 @@ class EpisodicStore {
       this.records = this.records.filter((entry) => !remove.has(entry.id));
     }
     this.save();
-    return { ...record };
+    return { ...record, deduplicated: false };
   }
 
   retrieve(subjectId, query = '', topK = 4, now = new Date()) {
@@ -63,7 +82,7 @@ class EpisodicStore {
       .map((record) => ({ ...record, _score: query ? overlapScore(query, record.summary) : 0 }))
       .sort((a, b) => {
         if (query && b._score !== a._score) return b._score - a._score;
-        return Date.parse(b.createdAt) - Date.parse(a.createdAt);
+        return Date.parse(b.updatedAt || b.createdAt) - Date.parse(a.updatedAt || a.createdAt);
       })
       .slice(0, Math.max(0, topK));
   }
@@ -78,4 +97,4 @@ class EpisodicStore {
   }
 }
 
-module.exports = { EpisodicStore };
+module.exports = { EpisodicStore, normalizeSummary };
