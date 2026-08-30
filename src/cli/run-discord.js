@@ -114,14 +114,19 @@ function createApplication(configInfo) {
   });
 
   const discord = config.discord || {};
+  const allowedChannelIds = discord.allowedChannelIds || [];
+  const allowedGuildIds = discord.allowedGuildIds || [];
+  if (discord.allowAll !== true && allowedChannelIds.length === 0 && allowedGuildIds.length === 0) {
+    throw new Error('discord.allowedChannelIds or discord.allowedGuildIds is required unless discord.allowAll is true');
+  }
   const tokenEnv = discord.tokenEnv || 'DISCORD_BOT_TOKEN';
   const token = process.env[tokenEnv];
   if (!token) throw new Error(`${tokenEnv} is not set`);
   const adapter = new DiscordBotAdapter({
     engine,
     token,
-    allowedChannelIds: discord.allowedChannelIds || [],
-    allowedGuildIds: discord.allowedGuildIds || [],
+    allowedChannelIds,
+    allowedGuildIds,
     followUpWindowMs: discord.followUpWindowMs ?? 180000,
     maxHistoryMessages: discord.maxHistoryMessages ?? 15,
   });
