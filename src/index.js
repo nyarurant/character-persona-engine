@@ -6,6 +6,7 @@ const { ReviewedCharacterEngine } = require('./runtime/reviewed-engine');
 const { RuntimeContext } = require('./runtime/runtime-context');
 const { ClaudeCliProvider } = require('./providers/claude-cli');
 const { retrieveVoice, retrieveLore } = require('./retrieval/lexical');
+const { PersistentEmbeddingCache } = require('./retrieval/embedding-cache');
 const {
   OllamaEmbedder,
   HybridRetriever,
@@ -15,6 +16,7 @@ const {
 const { buildSystemPrompt, buildUserPrompt } = require('./context/prompt-builder');
 const { buildPersonaFromCorpus } = require('./build/persona-builder');
 const { MemoryStore } = require('./memory/memory-store');
+const { EpisodicStore } = require('./memory/episodic-store');
 const {
   parseMemoryDecision,
   reviewMemoryTurn,
@@ -37,6 +39,7 @@ module.exports = {
   ClaudeCliProvider,
   retrieveVoice,
   retrieveLore,
+  PersistentEmbeddingCache,
   OllamaEmbedder,
   HybridRetriever,
   createVoiceHybridRetriever,
@@ -45,6 +48,7 @@ module.exports = {
   buildUserPrompt,
   buildPersonaFromCorpus,
   MemoryStore,
+  EpisodicStore,
   parseMemoryDecision,
   reviewMemoryTurn,
   applyMemoryDecision,
