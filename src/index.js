@@ -1,6 +1,6 @@
 'use strict';
 
-const { loadCharacterPack } = require('./character/character-pack');
+const { loadCharacterPack, validateExampleRecord, validateLoreRecord } = require('./character/character-pack');
 const { CURRENT_CHARACTER_SCHEMA_VERSION, migrateCharacterDefinition } = require('./character/schema');
 const { CharacterEngine } = require('./runtime/character-engine');
 const { ReviewedCharacterEngine } = require('./runtime/reviewed-engine');
@@ -18,9 +18,11 @@ const { AffinityStore } = require('./state/affinity-store');
 const { ConversationStateStore } = require('./state/conversation-state');
 const { parseConversationReview, reviewConversationTurn, applyConversationReview } = require('./review/conversation-reviewer');
 const { DiscordBotAdapter } = require('./adapters/discord-bot');
+const { TranscriptConversationAdapter, VoiceSttBridge, normalizeTranscript } = require('./adapters/transcript-conversation');
 
 module.exports = {
-  loadCharacterPack, CURRENT_CHARACTER_SCHEMA_VERSION, migrateCharacterDefinition,
+  loadCharacterPack, validateExampleRecord, validateLoreRecord,
+  CURRENT_CHARACTER_SCHEMA_VERSION, migrateCharacterDefinition,
   CharacterEngine, ReviewedCharacterEngine, RuntimeContext, ClaudeCliProvider,
   retrieveVoice, retrieveLore, OllamaEmbedder, HybridRetriever, createVoiceHybridRetriever, createLoreHybridRetriever,
   PersistentEmbeddingIndex, createIndexedVoiceRetriever, createIndexedLoreRetriever,
@@ -28,5 +30,5 @@ module.exports = {
   MemoryStore, EpisodeStore, parseMemoryDecision, reviewMemoryTurn, applyMemoryDecision,
   AffinityStore, ConversationStateStore,
   parseConversationReview, reviewConversationTurn, applyConversationReview,
-  DiscordBotAdapter,
+  DiscordBotAdapter, TranscriptConversationAdapter, VoiceSttBridge, normalizeTranscript,
 };
