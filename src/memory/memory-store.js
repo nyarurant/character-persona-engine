@@ -10,6 +10,13 @@ const SENSITIVE_PATTERNS = [
   /(?:credit[-_ ]?card|カード番号|bank[-_ ]?account|銀行口座|口座番号|暗証番号|マイナンバー)/iu,
   /(?:address|住所|郵便番号|自宅|phone|telephone|電話番号|携帯番号)/iu,
   /(?:legal[-_ ]?name|real[-_ ]?name|本名)/iu,
+  /(?:diagnos(?:is|ed)|medical[-_ ]?condition|medication|prescription|allerg(?:y|ies)|持病|診断|服薬|処方薬|アレルギー)/iu,
+  /(?:sexual[-_ ]?(?:history|preference)|sex[-_ ]?life|性癖|性的嗜好|性生活)/iu,
+  /(?:religion|religious belief|faith|宗教|信仰)/iu,
+  /(?:political[-_ ]?(?:affiliation|ideology)|political party|支持政党|政治思想|政治的立場)/iu,
+  /(?:race|ethnicity|ethnic origin|人種|民族)/iu,
+  /(?:trade union|union membership|労働組合)/iu,
+  /(?:criminal history|criminal record|犯罪歴|前科)/iu,
 ];
 
 function clean(value) {
