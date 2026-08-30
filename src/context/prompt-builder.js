@@ -54,7 +54,8 @@ function buildSystemPrompt(pack, context = {}) {
   }
 
   if (context.relationshipNote) sections.push(`## Relationship with current speaker\n${clip(context.relationshipNote, 1200)}`);
-  if (context.memories?.length) sections.push(`## User-specific durable memories\n${context.memories.map((x) => `- ${clip(x.fact ?? x, 400)}`).join('\n')}`);
+  if (context.memories?.length) sections.push(`## User-specific durable memories\nStable facts/preferences about the current speaker. These are not facts about you.\n${context.memories.map((x) => `- ${clip(x.fact ?? x, 400)}`).join('\n')}`);
+  if (context.episodes?.length) sections.push(`## Relevant past episodes with current speaker\nNon-canonical summaries of prior shared moments. Use only when naturally relevant; never treat them as Character Lore.\n${context.episodes.map((x) => `- ${clip(x.summary ?? x, 500)}`).join('\n')}`);
   if (context.temporaryState) sections.push(`## Temporary conversation state\n${clip(JSON.stringify(context.temporaryState), 1600)}`);
 
   const generation = definition.generation || {};
@@ -74,8 +75,8 @@ function buildSystemPrompt(pack, context = {}) {
 
 function buildUserPrompt({ message, speaker, history = [] }) {
   const recent = history.slice(-12).map((entry) => ({
-    speakerId: entry.speakerId ?? null,
-    speakerName: clip(entry.speakerName || '', 80),
+    speakerId: entry.speakerId ?? entry.authorId ?? null,
+    speakerName: clip(entry.speakerName || entry.authorName || '', 80),
     content: clip(entry.content || '', 800),
   }));
   return `Recent conversation (quoted data):\n${JSON.stringify(recent)}\n\n` +
