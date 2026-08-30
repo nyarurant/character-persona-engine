@@ -24,6 +24,7 @@
   },
   "discord": {
     "tokenEnv": "DISCORD_BOT_TOKEN",
+    "allowAll": false,
     "allowedChannelIds": [],
     "allowedGuildIds": [],
     "followUpWindowMs": 180000,
