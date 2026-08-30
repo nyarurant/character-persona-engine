@@ -4,11 +4,12 @@ const { retrieveVoice, retrieveLore } = require('../retrieval/lexical');
 const { buildSystemPrompt, buildUserPrompt } = require('../context/prompt-builder');
 
 class CharacterEngine {
-  constructor({ pack, provider, voiceTopK = 6, loreTopK = 6 } = {}) {
+  constructor({ pack, provider, runtimeContext = null, voiceTopK = 6, loreTopK = 6 } = {}) {
     if (!pack) throw new TypeError('pack is required');
     if (!provider || typeof provider.generate !== 'function') throw new TypeError('provider.generate is required');
     this.pack = pack;
     this.provider = provider;
+    this.runtimeContext = runtimeContext;
     this.voiceTopK = voiceTopK;
     this.loreTopK = loreTopK;
   }
@@ -16,14 +17,23 @@ class CharacterEngine {
   async respond(turn) {
     if (!turn || typeof turn.message !== 'string') throw new TypeError('turn.message must be a string');
     const query = [turn.message, ...(turn.history || []).slice(-3).map((x) => x.content || '')].join(' ');
+    const runtime = this.runtimeContext?.resolve({
+      speakerId: turn.speaker?.id,
+      scopeId: turn.scopeId,
+      query,
+      memoryTopK: turn.memoryTopK,
+    }) || {};
     const retrievedVoice = turn.retrievedVoice || retrieveVoice(this.pack.examples, query, this.voiceTopK);
     const retrievedLore = turn.retrievedLore || retrieveLore(this.pack.lore, query, this.loreTopK);
+    const relationshipNote = turn.relationshipNote ?? runtime.relationshipNote;
+    const memories = turn.memories ?? runtime.memories;
+    const temporaryState = turn.temporaryState ?? runtime.temporaryState;
     const systemPrompt = buildSystemPrompt(this.pack, {
       retrievedVoice,
       retrievedLore,
-      relationshipNote: turn.relationshipNote,
-      memories: turn.memories,
-      temporaryState: turn.temporaryState,
+      relationshipNote,
+      memories,
+      temporaryState,
     });
     const userPrompt = buildUserPrompt(turn);
     const result = await this.provider.generate({
@@ -38,6 +48,12 @@ class CharacterEngine {
       text: text.trim(),
       retrievedVoice,
       retrievedLore,
+      runtime: {
+        affinity: runtime.affinity ?? null,
+        memories: memories || [],
+        temporaryState: temporaryState || null,
+        relationshipNote: relationshipNote || '',
+      },
       usage: result?.usage ?? null,
     };
   }
