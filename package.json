@@ -10,9 +10,17 @@
     "validate-pack": "node src/cli/validate-pack.js",
     "build-persona": "node src/cli/build-persona.js",
     "migrate-pack": "node src/cli/migrate-pack.js",
-    "start:discord": "node src/cli/run-discord.js"
+    "start:discord": "node src/cli/run-discord.js",
+    "start:local": "node src/cli/run-local.js"
   },
-  "engines": { "node": ">=20" },
-  "optionalDependencies": { "discord.js": "^14.27.0" },
-  "license": "MIT"
+  "engines": {
+    "node": ">=20"
+  },
+  "optionalDependencies": {
+    "discord.js": "^14.27.0"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@discordjs/voice": "^0.19.2"
+  }
 }

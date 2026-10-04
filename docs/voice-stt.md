@@ -2,6 +2,10 @@
 
 The core engine does not own a voice transport or a speech-to-text implementation. It accepts transcript events through `TranscriptConversationAdapter`, and `VoiceSttBridge` can connect any object exposing `transcribe(input)`.
 
+For local speech output, `StyleBertVits2Client` calls a Style-Bert-VITS2-compatible `/health` and `/synthesize` HTTP server, writes WAV files atomically, and can play them synchronously on Windows. The Ellen launcher and `start:local` CLI use this adapter; TTS is applied only after all reply reviews and repairs, so the spoken text matches the final visible reply.
+
+Discord voice output is opt-in through `discord.voiceOutput.enabled`. The bot stays out of voice until an allowed, handled text message explicitly asks it to join (for example `通話入って` or `VC来て`). It joins the requester's current VC, speaks later handled replies there, and leaves after an explicit `通話抜けて` / `VC抜けて` request. Voice intent detection is local and deterministic; it does not add another model call.
+
 ```js
 const { TranscriptConversationAdapter, VoiceSttBridge } = require('../src');
 

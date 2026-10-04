@@ -1,0 +1,65 @@
+{
+  "character": "ellen",
+  "charactersDir": "./characters",
+  "model": {
+    "provider": "claude-cli",
+    "bin": "claude.cmd",
+    "model": "sonnet",
+    "timeoutMs": 120000
+  },
+  "retrieval": {
+    "mode": "hybrid",
+    "ollamaUrl": "http://127.0.0.1:11434",
+    "embeddingModel": "bge-m3",
+    "persistentIndex": true,
+    "indexFile": "./runtime-data/ellen/embeddings.json",
+    "embeddingBatchSize": 64,
+    "voiceTopK": 8,
+    "loreTopK": 5,
+    "fallbackOnError": true
+  },
+  "runtime": {
+    "dataDir": "./runtime-data/ellen",
+    "memoryReview": true,
+    "conversationReview": true,
+    "applyRepairs": true,
+    "maxEpisodeRecordsPerSubject": 250,
+    "userProfiles": {},
+    "favorableThreshold": 8,
+    "closeThreshold": 25
+  },
+  "discord": {
+    "tokenEnv": "DISCORD_BOT_TOKEN",
+    "tokenEnvFile": "C:/discord-auth-bot/.env",
+    "allowAll": false,
+    "allowedChannelIds": [
+      "1425837836933796003",
+      "1534838605153959936"
+    ],
+    "allowedGuildIds": [
+      "1392860073159561268",
+      "1523431038255104111"
+    ],
+    "followUpWindowMs": 180000,
+    "maxHistoryMessages": 15,
+    "reviewMode": "background",
+    "voiceOutput": {
+      "enabled": true,
+      "baseUrl": "http://127.0.0.1:5001",
+      "timeoutMs": 60000,
+      "outputDir": "./runtime-data/ellen/discord-voice",
+      "ffmpegBin": "ffmpeg.exe",
+      "connectTimeoutMs": 30000,
+      "playbackTimeoutMs": 120000,
+      "keepWavFiles": false,
+      "parameters": {
+        "length": 1.0,
+        "sdp_ratio": 0.4,
+        "style_weight": 1.0,
+        "pitch_scale": 1.0,
+        "intonation_scale": 1.0,
+        "seed": 42
+      }
+    }
+  }
+}

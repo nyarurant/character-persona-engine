@@ -42,3 +42,25 @@ test('Discord adapter handles a direct message then an in-window follow-up', asy
   assert.equal(calls[1].triggerType, 'follow-up');
   assert.equal(calls[1].messageId, '2');
 });
+
+test('Discord adapter forwards the final reply and source message to an output adapter', async () => {
+  let forwarded;
+  const engine = { async respond() { return { text: '返答' }; } };
+  const message = {
+    id: '10', channelId: 'c1', guildId: 'g1', createdTimestamp: 10, content: '<@bot> 通話入って',
+    author: { id: 'u1', username: 'user', bot: false }, member: { displayName: 'User' },
+    channel: { messages: { cache: new Map() }, async send(payload) { return payload; } },
+    mentions: { has: () => true, users: new Map([['bot', {}]]) },
+    async reply(payload) { return payload; },
+  };
+  const adapter = new DiscordBotAdapter({
+    engine,
+    botUserId: 'bot',
+    onReply: async (result, source, sent) => { forwarded = { result, source, sent }; return { spoken: true }; },
+  });
+  const handled = await adapter.handleMessage(message);
+  assert.equal(forwarded.result.text, '返答');
+  assert.equal(forwarded.source, message);
+  assert.equal(forwarded.sent.content, '返答');
+  assert.equal(handled.output.spoken, true);
+});

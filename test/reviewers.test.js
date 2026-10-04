@@ -6,6 +6,7 @@ const {
   parseMemoryDecision,
   parseConversationReview,
   ReviewedCharacterEngine,
+  DeferredReviewedCharacterEngine,
 } = require('../src');
 
 test('memory reviewer rejects sensitive-looking durable facts', () => {
@@ -13,6 +14,22 @@ test('memory reviewer rejects sensitive-looking durable facts', () => {
   const health = parseMemoryDecision('{"action":"remember","category":"identity","fact":"持病の診断がある","confidence":1,"expiresInDays":null}');
   assert.equal(credential.ok, false);
   assert.equal(health.ok, false);
+});
+
+test('deferred reviewed engine returns the reply before background review finishes', async () => {
+  let finishReview;
+  const reviewedEngine = {
+    engine: { provider: {}, async respond() { return { text: 'すぐ返す' }; } },
+    review() { return new Promise((resolve) => { finishReview = resolve; }); },
+  };
+  const deferred = new DeferredReviewedCharacterEngine({ reviewedEngine });
+  const result = await deferred.respond({ message: 'x' });
+  assert.equal(result.text, 'すぐ返す');
+  assert.equal(result.reviews.deferred, true);
+  assert.equal(deferred.pending.size, 1);
+  finishReview({ text: 'reviewed' });
+  await deferred.drain();
+  assert.equal(deferred.pending.size, 0);
 });
 
 test('ongoing memory requires an expiry', () => {

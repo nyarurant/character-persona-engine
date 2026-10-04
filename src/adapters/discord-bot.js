@@ -46,6 +46,7 @@ class DiscordBotAdapter {
     allowedGuildIds = [],
     followUpWindowMs = 180000,
     maxHistoryMessages = 15,
+    onReply = null,
   } = {}) {
     if (!engine || typeof engine.respond !== 'function') throw new TypeError('engine.respond is required');
     this.engine = engine;
@@ -57,6 +58,8 @@ class DiscordBotAdapter {
     this.allowedGuildIds = new Set(allowedGuildIds.map(String));
     this.followUpWindowMs = followUpWindowMs;
     this.maxHistoryMessages = maxHistoryMessages;
+    if (onReply != null && typeof onReply !== 'function') throw new TypeError('onReply must be a function');
+    this.onReply = onReply;
     this.cursors = new Map();
     this._bound = (message) => this.handleMessage(message).catch((error) => console.error('[discord-adapter]', error));
   }
@@ -91,6 +94,7 @@ class DiscordBotAdapter {
           discord.GatewayIntentBits.Guilds,
           discord.GatewayIntentBits.GuildMessages,
           discord.GatewayIntentBits.MessageContent,
+          discord.GatewayIntentBits.GuildVoiceStates,
         ],
       });
     }
@@ -140,6 +144,14 @@ class DiscordBotAdapter {
     const sent = direct && typeof message.reply === 'function'
       ? await message.reply(payload)
       : await message.channel.send(payload);
+    let output = null;
+    if (this.onReply) {
+      try { output = await this.onReply(result, message, sent); }
+      catch (error) {
+        output = { error: error.message };
+        console.error('[discord-output]', error);
+      }
+    }
 
     const key = String(message.channelId);
     const existing = this.cursors.get(key);
@@ -148,7 +160,7 @@ class DiscordBotAdapter {
       : new Set();
     participants.add(String(message.author.id));
     this.cursors.set(key, { expiresAt: Date.now() + this.followUpWindowMs, participantIds: participants });
-    return { handled: true, sent: true, result, message: sent };
+    return { handled: true, sent: true, result, message: sent, output };
   }
 }
 

@@ -45,6 +45,34 @@ npm test
 npm run validate-pack -- sample-character
 ```
 
+### Talk to Ellen locally with the trained voice
+
+The included Ellen config can run the full Character Engine in a terminal and send each final reply to the local Style-Bert-VITS2 server at `127.0.0.1:5000`.
+
+```powershell
+.\Start-Ellen-Local.cmd
+```
+
+`-LowMemory` disables Ollama semantic retrieval for that run and uses lexical retrieval only. `-TextOnly` skips TTS/WSL entirely. When the launcher starts TTS itself, it stops TTS and shuts WSL down on exit unless `-KeepTts` is supplied.
+
+```powershell
+.\Start-Ellen-Local.cmd -LowMemory
+.\Start-Ellen-Local.cmd -TextOnly -LowMemory
+```
+
+Inside the local chat, use `/voice on`, `/voice off`, `/reset`, or `/quit`.
+The Ellen config uses background review mode: the visible/spoken reply is returned first, while durable-memory, conversation-state, and affinity reviews run in parallel behind it. Set `local.reviewMode` to `blocking` when a reviewed repair must be applied before speech, or `off` to disable these reviews.
+
+### Discord text to opt-in VC speech
+
+Copy `ellen-discord.env.example` to the ignored `ellen-discord.env`, set a separate official bot token, invite that bot with View Channel / Send Messages / Connect / Speak permissions, then run:
+
+```powershell
+.\Start-Ellen-Discord.cmd -LowMemory
+```
+
+The bot replies to direct mentions/replies in the configured text channels. It joins the message author's current VC only after an explicit request such as `通話入って` or `VC来て`; while connected, later handled text replies are spoken in that VC. `通話抜けて` or `VC抜けて` speaks the final reply and disconnects. `-LowMemory` avoids loading Ollama embeddings; TTS still runs on CPU.
+
 ### Run on Discord
 
 Copy the example config, set at least one `discord.allowedChannelIds` or `discord.allowedGuildIds`, and set your official Discord bot token in the environment. The runner refuses to start with an empty scope unless you explicitly set `discord.allowAll` to `true`.

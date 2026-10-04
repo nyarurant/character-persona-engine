@@ -20,51 +20,61 @@ class ReviewedCharacterEngine {
 
   async respond(turn) {
     const result = await this.engine.respond(turn);
+    return this.review(turn, result);
+  }
+
+  async review(turn, result) {
     const reviews = { memory: null, conversation: null };
+    const tasks = [];
 
     if (this.memoryReview && this.memoryStore && turn?.speaker?.id && this.memoryProvider) {
-      try {
-        const decision = await reviewMemoryTurn({ provider: this.memoryProvider, message: turn.message, speaker: turn.speaker });
-        const applied = applyMemoryDecision(this.memoryStore, decision, { speaker: turn.speaker, messageId: turn.messageId });
-        reviews.memory = { decision, applied };
-      } catch (error) {
-        reviews.memory = { error: error.message };
-      }
+      tasks.push((async () => {
+        try {
+          const decision = await reviewMemoryTurn({ provider: this.memoryProvider, message: turn.message, speaker: turn.speaker });
+          const applied = applyMemoryDecision(this.memoryStore, decision, { speaker: turn.speaker, messageId: turn.messageId });
+          reviews.memory = { decision, applied };
+        } catch (error) {
+          reviews.memory = { error: error.message };
+        }
+      })());
     }
 
     if (this.conversationReview && this.conversationStateStore && turn?.scopeId && this.conversationProvider) {
-      try {
-        const previousState = this.conversationStateStore.get(turn.scopeId);
-        const review = await reviewConversationTurn({
-          provider: this.conversationProvider,
-          previousState,
-          recentContext: turn.history,
-          currentMessage: { id: turn.messageId || null, speaker: turn.speaker || null, content: turn.message },
-          botReply: result.text,
-        });
-        const applied = applyConversationReview(this.conversationStateStore, turn.scopeId, review);
-        let affinity = null;
-        if (this.affinityStore && turn?.speaker?.id && applied.affinityDelta) affinity = this.affinityStore.adjust(turn.speaker.id, applied.affinityDelta);
-        let episode = null;
-        if (this.episodeStore && turn?.speaker?.id && applied.episode?.action === 'SAVE') {
-          const expiresAt = applied.episode.expiresInDays ? new Date(Date.now() + applied.episode.expiresInDays * 86400000) : null;
-          episode = this.episodeStore.add({
-            subjectId: turn.speaker.id,
-            subjectName: turn.speaker.name,
-            summary: applied.episode.summary,
-            tags: applied.episode.tags,
-            scopeId: turn.scopeId,
-            sourceMessageIds: [turn.messageId].filter(Boolean),
-            expiresAt,
+      tasks.push((async () => {
+        try {
+          const previousState = this.conversationStateStore.get(turn.scopeId);
+          const review = await reviewConversationTurn({
+            provider: this.conversationProvider,
+            previousState,
+            recentContext: turn.history,
+            currentMessage: { id: turn.messageId || null, speaker: turn.speaker || null, content: turn.message },
+            botReply: result.text,
           });
+          const applied = applyConversationReview(this.conversationStateStore, turn.scopeId, review);
+          let affinity = null;
+          if (this.affinityStore && turn?.speaker?.id && applied.affinityDelta) affinity = this.affinityStore.adjust(turn.speaker.id, applied.affinityDelta);
+          let episode = null;
+          if (this.episodeStore && turn?.speaker?.id && applied.episode?.action === 'SAVE') {
+            const expiresAt = applied.episode.expiresInDays ? new Date(Date.now() + applied.episode.expiresInDays * 86400000) : null;
+            episode = this.episodeStore.add({
+              subjectId: turn.speaker.id,
+              subjectName: turn.speaker.name,
+              summary: applied.episode.summary,
+              tags: applied.episode.tags,
+              scopeId: turn.scopeId,
+              sourceMessageIds: [turn.messageId].filter(Boolean),
+              expiresAt,
+            });
+          }
+          reviews.conversation = { review, applied, affinity, episode };
+          if (this.applyRepairs && applied.repair?.action === 'EDIT' && applied.repair.replacement) result.text = applied.repair.replacement;
+        } catch (error) {
+          reviews.conversation = { error: error.message };
         }
-        reviews.conversation = { review, applied, affinity, episode };
-        if (this.applyRepairs && applied.repair?.action === 'EDIT' && applied.repair.replacement) result.text = applied.repair.replacement;
-      } catch (error) {
-        reviews.conversation = { error: error.message };
-      }
+      })());
     }
 
+    await Promise.all(tasks);
     return { ...result, reviews };
   }
 }

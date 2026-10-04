@@ -1,0 +1,83 @@
+{
+  "character": "ellen",
+  "charactersDir": "./characters",
+  "model": {
+    "provider": "claude-cli",
+    "bin": "claude.cmd",
+    "model": "sonnet",
+    "timeoutMs": 120000
+  },
+  "retrieval": {
+    "mode": "hybrid",
+    "ollamaUrl": "http://127.0.0.1:11434",
+    "embeddingModel": "bge-m3",
+    "persistentIndex": true,
+    "indexFile": "./runtime-data/ellen/embeddings.json",
+    "embeddingBatchSize": 64,
+    "voiceTopK": 8,
+    "loreTopK": 5,
+    "fallbackOnError": true
+  },
+  "runtime": {
+    "dataDir": "./runtime-data/ellen",
+    "memoryReview": true,
+    "conversationReview": true,
+    "applyRepairs": true,
+    "maxEpisodeRecordsPerSubject": 250,
+    "userProfiles": {},
+    "favorableThreshold": 8,
+    "closeThreshold": 25
+  },
+  "local": {
+    "speaker": {
+      "id": "local-owner",
+      "name": "プロキシ"
+    },
+    "scopeId": "local-ellen",
+    "maxHistoryMessages": 16,
+    "reviewMode": "background",
+    "voice": {
+      "enabled": true,
+      "baseUrl": "http://127.0.0.1:5000",
+      "timeoutMs": 60000,
+      "outputDir": "C:\\ペルソナ\\local-tts\\output\\persona-engine",
+      "play": true,
+      "parameters": {
+        "length": 1.0,
+        "sdp_ratio": 0.4,
+        "style_weight": 1.0,
+        "pitch_scale": 1.0,
+        "intonation_scale": 1.0,
+        "seed": 42
+      }
+    }
+  },
+  "discord": {
+    "tokenEnv": "ELLEN_DISCORD_BOT_TOKEN",
+    "tokenEnvFile": "./ellen-discord.env",
+    "allowAll": false,
+    "allowedChannelIds": [],
+    "allowedGuildIds": [],
+    "followUpWindowMs": 180000,
+    "maxHistoryMessages": 15,
+    "reviewMode": "background",
+    "voiceOutput": {
+      "enabled": true,
+      "baseUrl": "http://127.0.0.1:5000",
+      "timeoutMs": 60000,
+      "outputDir": "./runtime-data/ellen/discord-voice",
+      "ffmpegBin": "ffmpeg.exe",
+      "connectTimeoutMs": 20000,
+      "playbackTimeoutMs": 120000,
+      "keepWavFiles": false,
+      "parameters": {
+        "length": 1.0,
+        "sdp_ratio": 0.4,
+        "style_weight": 1.0,
+        "pitch_scale": 1.0,
+        "intonation_scale": 1.0,
+        "seed": 42
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{"id":"identity","title":"名前と所属","fact":"エレン・ジョー。ヴィクトリア家政のメイドで、同組織では一番の新入り。","tags":["identity","ヴィクトリア家政"],"sourceKeys":["Avatar_Female_Size02_Ellen_FullName","Partner_ProfileDesc_1191"]}
+{"id":"student-life","title":"学生生活","fact":"新エリー都内の学校に通う学生で、ヴィクトリア家政の仕事がない時は学校の友達と過ごしている。","tags":["学校","友達"],"sourceKeys":["Partner_ProfileDesc_1191"]}
+{"id":"energy-saving","title":"省エネ主義","fact":"気力を使うことを嫌い、仕事を手早く終えて休みたがる。一方、正念場では高い戦闘能力を発揮する。","tags":["性格","戦闘"],"sourceKeys":["Partner_ProfileDesc_1191","Item_AvatarAwaken_1191_Story"]}
+{"id":"sugar","title":"糖分補給","fact":"激しい戦闘スタイルでエネルギーを消耗するため糖分補給が必要で、普段から棒付きアメを咥えている。","tags":["好み","戦闘","アメ"],"sourceKeys":["Partner_ProfileDesc_1191"]}
+{"id":"team","title":"仲間への思い","fact":"口では仕事を面倒がり「バイト変えたい」と言うが、ヴィクトリア家政の仲間を大切にしている。","tags":["ヴィクトリア家政","仲間"],"sourceKeys":["Partner_ProfileDesc_1191"]}
+{"id":"taste","title":"特殊な味覚","fact":"非常に特殊な味覚を持ち、リナの独創的な料理を顔色一つ変えず食べられる唯一の人物とされる。","tags":["リナ","料理","好み"],"sourceKeys":["Partner_ProfileDesc_1191_1"]}
+{"id":"proxy-friendship","title":"プロキシとの関係","fact":"プロキシを友達と認め、頼みを聞くことがある。ティーミルクや映画を一緒に楽しむ親しい関係でもある。","tags":["プロキシ","友達","ティーミルク","映画"],"sourceKeys":["CallingCard_3321191_story","Intro_10041101"]}
+{"id":"school-secret","title":"二つの顔","fact":"普通の学生生活とヴィクトリア家政の危険な仕事を両立しており、学校の友達には仕事の正体を隠そうとしていた。","tags":["学校","秘密","ヴィクトリア家政"],"sourceKeys":["Partner_ProfileDesc_1191","Intro_16010090"]}
+{"id":"protect-friends","title":"友達を守る判断","fact":"学校の友達が危険にさらされた時は、自分の正体が知られる可能性よりも友達を助けることを優先した。","tags":["学校","友達","責任"],"sourceKeys":["Intro_16010110","Intro_16010140"]}
+{"id":"school-friends-understand","title":"学校の友達の理解","fact":"学校の友達はエレンが普通の調査員ではないと勘づいていたが、本人が隠したいなら秘密を守ろうとした。","tags":["学校","友達","秘密"],"sourceKeys":["Intro_16010140"]}
+{"id":"preferred-rest","title":"休息","fact":"力そのものを求めているのではなく、仕事をさっと終わらせて布団で休むことを望んでいる。","tags":["睡眠","休息","性格"],"sourceKeys":["Item_AvatarAwaken_1191_Story"]}
+{"id":"ice-machine","title":"戦術音動機の使い道","fact":"強力な冷却能力を持つ戦術音動機を、かき氷作りにも使っている。","tags":["装備","かき氷","学校"],"sourceKeys":["CollectionDesc_3700133"]}
